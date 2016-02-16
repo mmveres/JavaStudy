@@ -7,13 +7,17 @@ package jabber.client;
 //{RunByHand}
 import java.net.*;
 import java.util.Arrays;
+import java.util.LinkedList;
+import java.util.List;
 import java.util.concurrent.TimeUnit;
 
+import jabber.entities.User;
 import jabber.server.JabberServer;
 
 import java.io.*;
 
 public class JabberClient {
+	public static final int SEND_ALL=0;
 	private BufferedReader in;
 	private PrintWriter out;
 	private InetAddress addr;
@@ -23,8 +27,32 @@ public class JabberClient {
 	private volatile boolean stop;
 	private Socket socket;
 	private int steps;
-	private boolean connected;;
+	private boolean connected;
+	private User user;
+	private JabberClientListener jabberClientListener;
+	private String statusMsg;
 
+	public JabberClientListener getJabberClientListener() {
+		return jabberClientListener;
+	}
+
+	public void setJabberClientListener(JabberClientListener jcl) {
+		this.jabberClientListener = jcl;
+	}
+
+	public User getUser() {
+		return user;
+	}
+
+	public void setUser(User user) {
+		this.user = user;
+	}
+
+	public String getStatusMsg() {
+		return statusMsg;
+	}
+	
+	
 	public JabberClient() {
 		this(null);
 	}
@@ -47,13 +75,15 @@ public class JabberClient {
 	}
 
 	public void start() {
-
+		int cnt=0;
 		while (!connected) {
+
 			try {
 				socket = new Socket(addr, JabberServer.PORT);
 				connected = true;
 			} catch (IOException e) {
-				System.out.println("waiting for connection...");
+				setStatusMessage("waiting for connection... "+ cnt + " sec.");
+				cnt++;
 				try {
 					TimeUnit.MILLISECONDS.sleep(1000);
 				} catch (InterruptedException e1) {
@@ -65,7 +95,8 @@ public class JabberClient {
 		}
 		if (connected) {
 			try {
-				System.out.println("Started client " + id + " , socket " + socket);
+				if(jabberClientListener!=null)jabberClientListener.connectOK();
+				setStatusMessage("Connected to server:" + addr.getHostName());
 				in = new BufferedReader(new InputStreamReader(socket.getInputStream()));
 				out = new PrintWriter(new BufferedWriter(new OutputStreamWriter(socket.getOutputStream())), true);
 				keyboard = new BufferedReader(new InputStreamReader(System.in));
@@ -93,8 +124,8 @@ public class JabberClient {
 
 				}).start();
 
-				makeIntroduction();
-				requestActiveClientList();
+				// makeIntroduction();
+				// requestActiveClientList();
 
 				while (!stop) {
 					// System.out.println("write message...");
@@ -125,37 +156,86 @@ public class JabberClient {
 
 	}
 
+	
+	
+	private void setStatusMessage(String string) {
+		System.out.println(string);
+		statusMsg=string;
+		if (jabberClientListener != null) {
+			jabberClientListener.statusChanged();;
+		}
 
+	}
 
-	// could be
-	// <OK>JabberServer.SPLIT<OPTIONS> - to clarify previously sent command is
-	// done
+	// SYNTAX is
+	// <OK><SPLIT><OPTIONS> - to clarify previously sent command is done
 	// <MESSAGE><SPLIT><SENDER_ID/ALL><SPLIT><MESSAGE_TEXT>
-	// <COMMAND_HEADER>JabberServer.SPLIT<COMMAND>JabberServer.SPLIT<OPTIONS>
+	// <COMMAND_HEADER><SPLIT><COMMAND><SPLIT><OPTIONS>
+	
 	private void parseMessage(String str) {
 		String[] in = str.split(JabberServer.SPLIT);
-		if (str.startsWith(JabberServer.SRV_REPLY)) {
-			System.out.print("service message from server: ");
-			if (in[1].equals(JabberServer.CMD_SET_ID)) {
-				System.out.println("ID " + in[2] + " set ok!");
-			}
-			if (in[1].equals(JabberServer.CMD_SET_NAME)) {
-				System.out.println("name " + in[2] + " set ok!");
-			}
-			if(in[1].equals(JabberServer.CMD_GET_LIST_ACTIVE)){
-				System.out.println("" + in[2]);
-			}
-				
 		
+		//server replies part
+		if (str.startsWith(JabberServer.SRV_REPLY)) {
+			
+			System.out.print("service message from server: ");
+			
+			//registered?
+			if (in[1].equals(JabberServer.CMD_DO_REGISTER)) {
+				if(in[2].equals(JabberServer.BAD)){
+					setStatusMessage("User exists or connection problem, try again!");
+				}else{
+					if(jabberClientListener!=null)jabberClientListener.registerOK();
+					setStatusMessage("Succsesfully registered, now login!");
+				}
+			}
+			
+			//login check
+			if (in[1].equals(JabberServer.CMD_DO_LOGIN)) {
+				if(in[2].equals(JabberServer.BAD)){
+					setStatusMessage("Login failed, check input and try again!");
+				}else{
+					setStatusMessage("Login OK!");
+					user.setId(Integer.parseInt(in[3]));
+					if(jabberClientListener!=null)jabberClientListener.loginOK();
 
+				}
+			}
+			
+			
+			
+			if (in[1].equals(JabberServer.CMD_LIST_ACTIVE)) {
+				if(in[2].length()>0){
+					String []list=in[2].split(JabberServer.CMD_SPLIT);
+					System.out.println(Arrays.toString(list));
+					List<User> users=new LinkedList<>();
+					for(int i=0;i<list.length;i=i+2){
+						int id = Integer.parseInt(list[i]);
+						if(id!=user.getId())users.add(new User(id, list[i+1], "", 0));
+						
+					}
+					jabberClientListener.userListUpdated(users);
+				}
+				
+			}
+		
+		//server commands part
 		} else if (str.startsWith(JabberServer.COMMAND_HEADER)) {
-			System.out.println("command message from server ...");
-			System.out.println(str);
+			
+			//add user to list
+			if(in[1].equals(JabberServer.CMD_ADD_USER)){
+				jabberClientListener.addUser(Integer.parseInt(in[2]), in[3]);
+			}
+			
+			
+		//messages part
 		} else if (str.startsWith(JabberServer.MESSAGE_HEADER)) {
 			if (in[1].equals(JabberServer.ALL)) {
 				System.out.println("Broadcast received: " + in[2]);
 			} else {
 				System.out.println("From " + getNameByID(in[1]) + " : " + in[2]);
+				
+				jabberClientListener.newMessageArrived(Integer.parseInt(in[1]),in[2]);
 			}
 
 		}
@@ -165,21 +245,36 @@ public class JabberClient {
 	private String getNameByID(String string) {
 		return string;
 	}
-	
-	private void requestActiveClientList() {
-		System.out.println("Requesting active clients list...");
-		sendMessage(
-				JabberServer.COMMAND_HEADER + JabberServer.SPLIT + JabberServer.CMD_GET_LIST_ACTIVE);
-		
+
+	public void requestActiveClientList() {
+		setStatusMessage("Requesting active clients list...");
+		sendMessage(JabberServer.COMMAND_HEADER + JabberServer.SPLIT + JabberServer.CMD_LIST_ACTIVE);
+
 	}
+	
+	public void doLogin(String login, int pwd){
+		if(user==null){
+			user=new User(login,pwd);
+		}else{
+			user.setName(login);
+			user.setPwd(pwd);
+		}	
+		setStatusMessage("Making logon...");
+		sendMessage(JabberServer.COMMAND_HEADER + JabberServer.SPLIT + JabberServer.CMD_DO_LOGIN+JabberServer.SPLIT+login+JabberServer.SPLIT+pwd);
+
+	}
+	
+	
+
 	private void makeIntroduction() {
-		System.out.println("Sending name and ID to server...");
+		setStatusMessage("Sending ID to server...");
 		// newMessage = true;
 		sendMessage(
 				JabberServer.COMMAND_HEADER + JabberServer.SPLIT + JabberServer.CMD_SET_ID + JabberServer.SPLIT + id);
 		// newMessage = true;
-		sendMessage(JabberServer.COMMAND_HEADER + JabberServer.SPLIT + JabberServer.CMD_SET_NAME + JabberServer.SPLIT
-				+ "Kote");
+		// sendMessage(JabberServer.COMMAND_HEADER + JabberServer.SPLIT +
+		// JabberServer.CMD_SET_NAME + JabberServer.SPLIT
+		// + "Kote");
 
 	}
 
@@ -199,10 +294,27 @@ public class JabberClient {
 					JabberServer.MESSAGE_HEADER + JabberServer.SPLIT + JabberServer.ALL + JabberServer.SPLIT + message);
 		}
 	}
+	
+	public void shutdown(){
+		stop=true;
+	}
 
 	public static void main(String[] args) throws IOException {
 		JabberClient jc = new JabberClient();
 		jc.start();
 
+	}
+
+	public void doRegister(String login, int pwd) {
+		if(user==null){
+			user=new User(login,pwd);
+		}else{
+			user.setName(login);
+			user.setPwd(pwd);
+		}
+		setStatusMessage("Registering...");
+		sendMessage(JabberServer.COMMAND_HEADER + JabberServer.SPLIT + JabberServer.CMD_DO_REGISTER+JabberServer.SPLIT+login+JabberServer.SPLIT+pwd);
+
+		
 	}
 }

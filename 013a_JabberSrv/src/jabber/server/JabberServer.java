@@ -6,23 +6,30 @@ import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
 
+import jabber.entities.User;
+
 
 public class JabberServer {
 	public static final int PORT = 8080;
 	public static final String MESSAGE_HEADER="<!MESSAGE>";
 	public static final String SPLIT="<!SPLIT>";
-	public static final String CMD_SPLIT="<!CMD_SPLIT>";
+	public static final String CMD_SPLIT="<C!>";
 	public static final String COMMAND_HEADER="<!CMD>";
 	public static final String CMD_CLIENT_EXIT="<!CLIENT_EXIT>";
 	public static final String CMD_REMOVE_ID="<!REMOVE_ID>";
-	public static final String CMD_ADD_ID="<!ADD_ID>";
+	public static final String CMD_ADD_USER="<!ADD_USER>";
 	public static final String CMD_GET_ALL="<!GET_ALL>";
 	public static final String CMD_GET_NAME_FOR_ID="<!GET_NAME_FOR_ID>";
-	public static final String CMD_SET_ID="<S!ET_ID>";
+	public static final String CMD_SET_ID="<SET_ID>";
 	public static final String CMD_SET_NAME="<!SET_NAME>";
-	public static final String CMD_GET_LIST_ACTIVE="<!GET_LIST_ACTIVE>";
+	public static final String CMD_DO_LOGIN="<!DO_LOGIN>";
+	public static final String CMD_DO_REGISTER="<!DO_REGISTER>";
+	public static final String CMD_SET_PASSWORD="<!SET_PASSWORD>";
+	public static final String CMD_LIST_ACTIVE="<!LIST_ACTIVE>";
 	public static final String ALL="<!ALL>";
 	public static final String END="<!END>";
+	public static final String OK="<!OK>";
+	public static final String BAD="<!BAD>";
 	public static final String SRV_REPLY="<!SRV_REPLY!>";
 	private List<SingleClientServer> serverThreads = new LinkedList<>();
 	private static JabberServer jabberServer;
@@ -103,7 +110,7 @@ public class JabberServer {
 
 	}
 
-	public synchronized void removeSingleClientServer(long id) {
+	public synchronized void removeSingleClientServer(int id) {
 		while(listBlocked){
 			try {
 				wait();
@@ -113,14 +120,14 @@ public class JabberServer {
 			}
 		}
 		listBlocked=true;
-		sendAll(COMMAND_HEADER+SPLIT+CMD_REMOVE_ID+SPLIT+id);
 		Iterator<SingleClientServer> iterator=serverThreads.iterator();
 		while(iterator.hasNext()){
-			if(iterator.next().getClientID()==id){
+			if(iterator.next().getUser().getId()==id){
 				iterator.remove();
 				break;
 			}
 		}
+		sendAll(COMMAND_HEADER+SPLIT+CMD_REMOVE_ID+SPLIT+id);
 		System.out.println("Main Server: size "+ serverThreads.size());
 		listBlocked=false;
 		notifyAll();
@@ -154,12 +161,17 @@ public class JabberServer {
 		}
 	}
 	
-	public long []getActiveIDs(){
-		long []clientList=new long[serverThreads.size()];
+	public User []getActiveUsers(){
+		User []clientList=new User[serverThreads.size()];
 		int counter=0;
 		for (SingleClientServer singleClientServer : serverThreads) {
-			clientList[counter++]=singleClientServer.getClientID();
+			clientList[counter++]=singleClientServer.getUser();
 		}
 		return clientList;
+	}
+
+	public void sendTo(int userIDTo, String string) {
+		
+		
 	}
 }
