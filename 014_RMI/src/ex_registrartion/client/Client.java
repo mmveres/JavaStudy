@@ -91,8 +91,7 @@ public class Client {
 // Если сервер размещен на удаленном компьютере, 
 // то вместо localhost указывается имя 
 // хоста сервера
-							ConfServer server = (ConfServer) Naming.lookup(
-									url);
+							ConfServer server = (ConfServer) Naming.lookup(url);
 
 				// Формирование сведений о регистрации для 
 //отправки на сервер
@@ -102,13 +101,6 @@ public class Client {
 						txtOrganization.getText(), 
 						txtReportTheme.getText(), 
 						txtEmail.getText());
-//				RegistrationInfo registrationInfo = 
-//new RegistrationInfo(
-//							txtFirstName.getText(), 
-//							txtLastName.getText(), 
-//							txtOrganization.getText(), 
-//							txtReportTheme.getText(), 
-//							txtEmail.getText());
 				// Вызов удаленного метода
 				server.registerConfParticipant(participant);
 				

@@ -1,8 +1,13 @@
 package stock.gui;
 
+import java.awt.EventQueue;
 import java.awt.GridLayout;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
+import java.net.MalformedURLException;
+import java.rmi.Naming;
+import java.rmi.NotBoundException;
+import java.rmi.RemoteException;
 import java.util.List;
 
 import javax.swing.JButton;
@@ -13,12 +18,15 @@ import javax.swing.JOptionPane;
 import javax.swing.JTextField;
 
 import stock.dao.ProductDAO;
+import stock.dao.ProductDAOLocal;
+import stock.dao.ProductDAOSrv;
 import stock.products.Product;;
 
 public class ProductInfoClient extends JDialog {
 	private static final long serialVersionUID = 1L;
 	// Создаем DAO-объект
-	ProductDAO productDAO = new ProductDAO();
+	ProductDAO productDAO;
+	String url = "//localhost:59001/Products";
 	// Объявление элементов управления
 	private JLabel lbSelectId = new JLabel("Выбор товара по Id");
 	private JLabel lbQuantity = new JLabel("Остаток");
@@ -41,13 +49,27 @@ public class ProductInfoClient extends JDialog {
 	 * @param args
 	 */
 	public static void main(String[] args) {
-		new ProductInfoClient();
+		EventQueue.invokeLater(new Runnable() {
+			
+			@Override
+			public void run() {
+				new ProductInfoClient();
+				
+			}
+		});
 	}
 
 	/**
 	 * Конструктор диалога
 	 */
 	public ProductInfoClient() {
+				try {
+					productDAO = (ProductDAO) Naming.lookup(url);
+				} catch (MalformedURLException | RemoteException | NotBoundException e1) {
+					// TODO Auto-generated catch block
+					e1.printStackTrace();
+				}
+
 		this.setTitle("Информация о товарах");
 		this.setDefaultCloseOperation(JDialog.DISPOSE_ON_CLOSE);
 		this.setLayout(new GridLayout(8, 2));
