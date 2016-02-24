@@ -4,10 +4,10 @@ import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
 
-import entities.ShipCell;
-import entities.ShipEntity;
-import entities.ShipLayout;
-import entities.ShipType;
+import entities.cells.ShipCell;
+import entities.ships.ShipEntity;
+import entities.ships.ShipLayout;
+import entities.ships.ShipType;
 import logic.BattleField;
 import logic.BattleFieldController;
 

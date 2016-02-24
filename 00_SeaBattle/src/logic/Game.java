@@ -6,9 +6,8 @@ public class Game implements Runnable{
 
 	private User user01;
 	private User user02;
-	private BattleField battleField01;
-	private BattleField battleField02;
-	private User winner;
+	private BattleField BattleField01;
+	private BattleField BattleField02;
 	private volatile boolean stop;
 	
 	
@@ -19,7 +18,7 @@ public class Game implements Runnable{
 	
 	@Override
 	public void run() {
-		if(battleField01==null||battleField02==null||user01==null||user02==null)return;
+		
 		while(!stop){
 			
 		}

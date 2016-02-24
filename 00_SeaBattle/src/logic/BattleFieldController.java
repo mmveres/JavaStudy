@@ -4,14 +4,26 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Random;
 
-import entities.FieldCell;
-import entities.Message;
-import entities.Ship;
-import entities.ShipCell;
-import entities.ShipEntity;
-import entities.ShipLayout;
-import entities.ShipType;
+import entities.cells.CoordinateCell;
+import entities.cells.FieldCell;
+import entities.cells.ShipCell;
+import entities.cells.ShotResult;
+import entities.ships.Ship;
+import entities.ships.ShipEntity;
+import entities.ships.ShipLayout;
+import entities.ships.ShipType;
 
+/**
+ * Class responsible for basic interactions with <a href=".../logic/BattleField.html">Battlefield<a/> object:<br>
+ * - automatic random fleet generation <br>
+ * - generating shot replies (cell status after being shot - is it ship, is it hit, is ship still operational)<br>
+ * - generating console output for current Battlefield status<br>
+ * - adding and removing single ship<br>
+ * Class can interact with externally generated battlefield in condition ships  have valid location.
+ * 
+ * @author d2e
+ *
+ */
 public class BattleFieldController {
 
 	private BattleField battleField;
@@ -19,8 +31,9 @@ public class BattleFieldController {
 	private List<Ship> ships = new LinkedList<>();
 
 	public BattleFieldController(BattleField battleField) {
+		if(battleField==null)throw new IllegalArgumentException("Nullable argument provided for controller!");
 		this.battleField = battleField;
-		if (battleField != null)
+		if (battleField.getFieldArray() != null)
 			battleArray = battleField.getFieldArray();
 
 	}
@@ -38,6 +51,24 @@ public class BattleFieldController {
 
 	}
 
+	
+	 /**
+     * A method which adds a ship and "dead zone" around it to battlefield only in case if provided
+     * <a href=".../entities/ships/Ship.html">Ship</a> object meets placing restrictions:<br>
+     * -ship type amount on field is within restricted qty<br>
+     * -all <a href=".../entities/cells/ShipCell.html">ShipCells</a> are within field<br>
+     * - Ship does not cross another ship already placed or "dead zone" around ships 
+     *
+     * @param  Ship
+     *         A ship object as described in <a href=".../entities/ships/Ship.html">Ship</a>
+     *         syntax.
+     *
+     * @throws  NullPointerException
+     *          If the <tt>Ship</tt> is <tt>null</tt>
+     *
+     * @return  Boolean <tt>true</tt>  if ship is added, otherwise false;
+     */
+	
 	public boolean addShip(Ship ship) {
 		if (extendsAllowedQty(ship))
 			return false;
@@ -68,14 +99,14 @@ public class BattleFieldController {
 
 	}
 
-	public Message shootCell(ShipCell shipCell) {
-		int x = shipCell.getX() - 1;
-		int y = shipCell.getY() - 1;
-		Message message = new Message(x + 1, y + 1);
+	public ShotResult shootCell(CoordinateCell shotCell) {
+		int x = shotCell.getX() - 1;
+		int y = shotCell.getY() - 1;
+		ShotResult message = new ShotResult(x + 1, y + 1);
 		battleArray[x][y].setHit(true);
 		if (battleArray[x][y].isShip()) {
 			for (Ship ship : ships) {
-				if (ship.isShip(shipCell, true)) {
+				if (ship.isShip(shotCell, true)) {
 					message.setHit(true);
 					battleField.setCurrentHealth(battleField.getCurrentHealth() - 1);
 					;
@@ -110,14 +141,26 @@ public class BattleFieldController {
 					boolean added = false;
 					while (!added) {
 						ShipLayout layout = null;
+						int maxX = BattleField.FIELD_SIZE;
+						int maxY = BattleField.FIELD_SIZE;
 						if (types[i] == ShipType.SUBMARINE) {
 							layout = ShipLayout.Horizontal;
 						} else {
-							layout = layouts[(int) (Math.random() * 2)];
+							layout = layouts[(int) (Math.random() * layouts.length)];
+							switch (layout) {
+							case Horizontal:
+								maxX = maxX + 1 - types[i].getLength();
+								break;
+							case Vertical:
+								maxY = maxY + 1 - types[i].getLength();
+								break;
+							}
 						}
-						int x = rn.nextInt(BattleField.FIELD_SIZE-1) + 1;
-						int y = rn.nextInt(BattleField.FIELD_SIZE-1) + 1;
-						System.out.println("" + x + "," + y);
+						int x = rn.nextInt(maxX) + 1;
+						int y = rn.nextInt(maxY) + 1;
+						do {
+						} while (false);
+//						System.out.println("" + x + "," + y);
 						added = addShip(new ShipEntity(new ShipCell(x, y), layout, types[i]));
 					}
 				}

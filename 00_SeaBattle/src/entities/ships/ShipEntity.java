@@ -1,6 +1,9 @@
-package entities;
+package entities.ships;
 
 import java.util.Arrays;
+
+import entities.cells.CoordinateCell;
+import entities.cells.ShipCell;
 
 public class ShipEntity implements Ship {
 	
@@ -45,7 +48,7 @@ public class ShipEntity implements Ship {
 	}
 
 	@Override
-	public boolean isShip(ShipCell cell, boolean markHit) {
+	public boolean isShip(CoordinateCell cell, boolean markHit) {
 		for (int i = 0; i < sections.length; i++) {
 			if(sections[i].equals(cell)){
 				sections[i].setHit(markHit);

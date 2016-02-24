@@ -1,14 +1,15 @@
-package entities;
+package entities.cells;
 
 import java.io.Serializable;
 
-public class ShipCell implements Serializable{
+
+public class CoordinateCell implements Serializable{
+	public static final int FIELD_SIZE=10;
 	private int x;
 	private int y;
-	private boolean hit;
 
-	public ShipCell(int x, int y) {
-		if(x<1||y<1||x>10||y>10)throw new IllegalArgumentException("Wrong argument(s). Coordinate value should be within range 1... 10");
+	public CoordinateCell(int x, int y) {
+		if(x<1||y<1||x>FIELD_SIZE||y>FIELD_SIZE)throw new IllegalArgumentException("Wrong argument(s). Coordinate value should be within range 1... 10");
 		this.x = x;
 		this.y = y;
 	}
@@ -31,24 +32,24 @@ public class ShipCell implements Serializable{
 		this.y = y;
 	}
 
-	public boolean isHit() {
-		return hit;
-	}
-
-	public void setHit(boolean hit) {
-		this.hit = hit;
-	}
 
 	@Override
 	public boolean equals(Object obj) {
 		if (obj == null)
 			return false;
-		if (!(obj instanceof ShipCell))
+		if (!(obj instanceof CoordinateCell))
 			return false;
-		if (x != ((ShipCell) obj).getX())
+		if (x != ((CoordinateCell) obj).getX())
 			return false;
-		if (y != ((ShipCell) obj).getY())
+		if (y != ((CoordinateCell) obj).getY())
 			return false;
 		return true;
 	}
+
+	@Override
+	public String toString() {
+		return "Cell [" + x + "," + y + "]";
+	}
+	
+	
 }

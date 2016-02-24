@@ -1,6 +1,8 @@
-package entities;
+package entities.cells;
 
-public class FieldCell {
+import java.io.Serializable;
+
+public class FieldCell implements Serializable{
 	private boolean ship;
 	private boolean hit;
 	private boolean placeable=true;

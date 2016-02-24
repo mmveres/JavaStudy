@@ -8,11 +8,11 @@ import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
 
-import entities.Ship;
-import entities.ShipCell;
-import entities.ShipEntity;
-import entities.ShipLayout;
-import entities.ShipType;
+import entities.cells.ShipCell;
+import entities.ships.Ship;
+import entities.ships.ShipEntity;
+import entities.ships.ShipLayout;
+import entities.ships.ShipType;
 import logic.BattleField;
 import logic.BattleFieldController;
 

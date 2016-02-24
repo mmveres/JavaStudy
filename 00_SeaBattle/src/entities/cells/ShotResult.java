@@ -1,16 +1,23 @@
-package entities;
+package entities.cells;
 
 import java.io.Serializable;
 
-public class Message extends ShipCell implements Serializable{
+public class ShotResult extends ShipCell implements Serializable{
 	private boolean alive=true;
 	
 	
-	public Message(int x, int y) {
+	
+	public ShotResult(int x, int y) {
 		super(x, y);
 		
 	}
 
+	public ShotResult(int x, int y, boolean isHit, boolean isAlive) {
+		super(x, y);
+		super.setHit(isHit);
+		alive=isAlive;
+		
+	}
 
 	public boolean isAlive() {
 		return alive;
