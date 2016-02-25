@@ -1,8 +1,9 @@
-package entity;
+package app;
 
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Iterator;
 import java.util.List;
 
 import javax.xml.parsers.DocumentBuilder;
@@ -22,6 +23,9 @@ import org.w3c.dom.Document;
 import org.w3c.dom.Element;
 import org.w3c.dom.NodeList;
 import org.xml.sax.SAXException;
+
+import entity.City;
+import entity.Country;
 
 public class Worldmap {
 
@@ -54,18 +58,18 @@ public class Worldmap {
 			tempCountry.setAttribute("name", country.getName());
 			root.appendChild(tempCountry);
 			for (City city : cities) {
-				if(city.getCountry().equals(tempCountry)){
+				if(city.getCountry().equals(country)){
 					Element tempCity = doc.createElement("city");
 					tempCity.setAttribute("id", ""+city.getCityCode());
 					tempCity.setAttribute("name", city.getName());
 					tempCity.setAttribute("count", ""+city.getPopulationAmount());
 					tempCity.setAttribute("iscap", (city.isCapital()?"1":"0"));
 					tempCountry.appendChild(tempCity);
-				}
-
-				
+				}				
 			}
 		}
+
+		
 		Source domSource = new DOMSource(doc);
 		Result fileResult = new StreamResult(new File(filename));
 		TransformerFactory factory = TransformerFactory.newInstance();
@@ -110,27 +114,28 @@ public class Worldmap {
 			NodeList listCountries = root.getElementsByTagName("country");
 			// Проходим по странам
 			countries = new ArrayList<>();
+			cities=new ArrayList<>();
 			for (int i = 0; i < listCountries.getLength(); i++) {
 				// Получаем текущую срану
 				Element country = (Element) listCountries.item(i);
 				String countryCode = country.getAttribute("id");
 				String countryName = country.getAttribute("name");
 				countries.add(new Country(Integer.parseInt(countryCode), countryName));
-				System.out.println(countryCode + " " + countryName + ":");
 				// Получаем коллекцию городов для страны
 				NodeList listCities = country.getElementsByTagName("city");
 				// Проходим по городам
 				for (int j = 0; j < listCities.getLength(); j++) {
 					// Получаем текущий город
-					cities=new ArrayList<>();
+					
 					Element city = (Element) listCities.item(j);
 					String cityName = city.getAttribute("name");
 					String cityCode= city.getAttribute("id");
 					String population= city.getAttribute("count");
 					String capital= city.getAttribute("iscap");
 					boolean isCapital=(capital.equals("1")?true:false);
-					cities.add(new City(Integer.parseInt(cityCode), cityName, isCapital, Integer.parseInt(population), countries.get(i)));
-					System.out.println("" + cityName);
+					City c = new City(Integer.parseInt(cityCode), cityName, isCapital, Integer.parseInt(population), countries.get(i));
+					cities.add(c);
+
 				}
 			}
 		}
@@ -138,28 +143,32 @@ public class Worldmap {
 	}
 	
 	
+	public void printAll(){
+		for (Country country : countries) {
+			System.out.println(country);
+			for (City city : cities) {
+				if(city.getCountry().equals(country))System.out.println(city);
+			}
+		}
+	}
 
 
 	// Добавить новую страну
 	public void addCountry(int code, String name) {
-		// если страны с заданным кодом в массиве countries еще нет -
-		// добавляем новую страну в массив
-		// в противном случае генерируем исключение
+		countries.add(new Country(code, name));
 	}
 
 	// Получить страну c заданным кодом
-	public Country getCountry(int code) {
-		// возвращаем страну с заданным кодом
-		// если страны с заданным кодом в массиве countries нет -
-		// генерируем исключение
+	public Country getCountryByCode(int code) {
+		for (Country country : countries) {
+			if(country.getCode()==code) return country;
+		}
 		return null;
 	}
 
 	// Получить страну c заданным номером
-	public Country getCountryInd(int index) {
-		// возвращаем страну с заданным порядковым номером
-		// если номер выходит за границы индексов массива -
-		// генерируем исключение
+	public Country getCountryByIndex(int index) {
+		if(index>-1&&index<countries.size())return countries.get(index);
 
 		return null;
 	}
@@ -167,7 +176,7 @@ public class Worldmap {
 	// Получить количество стран
 	public int countCountries() {
 		// возвращаем количество стран
-		return 0;
+		return countries.size();
 	}
 
 	// Удалить страну
@@ -176,6 +185,16 @@ public class Worldmap {
 		// ссылающиеся на данну страну
 		// Если страны с заданным кодом в массиве countries нет -
 		// генерируем исключение
+		Country country = getCountryByCode(code);
+		if(country==null){
+			throw new IllegalArgumentException("No country with code provided exists!");
+		}else{
+			Iterator<City> cityIter = cities.iterator();
+			while(cityIter.hasNext()){
+				if(cityIter.next().getCountry().equals(country)) cityIter.remove();
+			}
+			countries.remove(country);
+		}
 	}
 
 	// Добавить новый город для заданной страны
@@ -185,6 +204,20 @@ public class Worldmap {
 		// если страны с заданным кодом countryCode нет
 		// - генерируем исключение
 		// в противном случае, добавляем новый город
+		if(getCountryByCode(countryCode)==null)throw new IllegalArgumentException("No country with code " + countryCode +" exists!");
+		if(getCityByCode(code)==null){
+			cities.add(new City(code, name, isCapital, count, getCountryByCode(countryCode)));
+		}else{
+			throw new IllegalArgumentException("City with code " + code + " already exists!");
+		}
+	}
+	
+	//Найти город по коду
+	public City getCityByCode(int code){
+		for (City city : cities) {
+			if(city.getCityCode()==code) return city;
+		}
+		return null;
 	}
 
 }
